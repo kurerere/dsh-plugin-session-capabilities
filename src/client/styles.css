@@ -1,5 +1,5 @@
 /*
- * dsh-session-capabilities browser styles.
+ * dsh-plugin-session-capabilities browser styles.
  * Tokens only (--dsw-* / --dsh-font-*), so light and dark follow the shell
  * theme. Classes are prefixed `dshsc-` because an out-of-tree bundle cannot
  * use the monorepo's CSS-Modules pipeline; the plugin injects this sheet once

@@ -1,6 +1,6 @@
-# dsh-session-capabilities bundle layer.
+# dsh-plugin-session-capabilities bundle layer.
 # One row mounts the Host face (routes + change tracking); because the package
 # declares `dsh.client`, the Web/Desktop client loads ./client automatically.
 - insert:
     - id: session-capabilities
-      name: dsh-session-capabilities
+      name: dsh-plugin-session-capabilities

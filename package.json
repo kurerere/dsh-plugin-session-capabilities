@@ -1,9 +1,13 @@
 {
-  "name": "dsh-session-capabilities",
+  "name": "dsh-plugin-session-capabilities",
   "description": "DeepSeek Harness plugin: a docked session-details card (header corner toggle + push panel) showing the skills and MCP servers loaded for the current session",
   "version": "0.1.0",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kurerere/dsh-plugin-session-capabilities.git"
+  },
   "keywords": [
     "dsh-plugin",
     "deepseek-harness",

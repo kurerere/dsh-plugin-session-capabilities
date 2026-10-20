@@ -1,4 +1,4 @@
-# dsh-session-capabilities
+# dsh-plugin-session-capabilities
 
 [中文](./README.zh.md)
 
@@ -32,22 +32,22 @@ The package ships prebuilt `lib/`, so it installs straight from a directory or a
 
 ```sh
 # from a local checkout
-dsh plugin --profile web add link:/absolute/path/to/dsh-session-capabilities
+dsh plugin --profile web add link:/absolute/path/to/dsh-plugin-session-capabilities
 
 # from GitHub (once published)
-dsh plugin --profile web add github:<owner>/dsh-session-capabilities
+dsh plugin --profile web add github:kurerere/dsh-plugin-session-capabilities
 ```
 
 Then start `dsh --profile web` as usual. Check that the layer is composed with:
 
 ```sh
-dsh --profile web --dump-config | grep -A2 'dsh-session-capabilities'
-# == dsh-session-capabilities
+dsh --profile web --dump-config | grep -A2 'dsh-plugin-session-capabilities'
+# == dsh-plugin-session-capabilities
 # - id: session-capabilities
-#   name: dsh-session-capabilities
+#   name: dsh-plugin-session-capabilities
 ```
 
-Remove with `dsh plugin --profile web remove dsh-session-capabilities`.
+Remove with `dsh plugin --profile web remove dsh-plugin-session-capabilities`.
 
 ## Development
 
@@ -63,7 +63,7 @@ Run it inside a deepseek-harness checkout without installing, using the dev over
 
 ```sh
 cd /path/to/deepseek-harness
-pnpm dsh --profile web --patch /abs/path/dsh-session-capabilities/dev/cordis.dev.yml --no-open
+pnpm dsh --profile web --patch /abs/path/dsh-plugin-session-capabilities/dev/cordis.dev.yml --no-open
 ```
 
 Use the explicit `--profile web --patch …` form. The `pnpm dsh web --patch …` shorthand has

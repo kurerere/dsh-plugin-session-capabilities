@@ -1,5 +1,5 @@
 /**
- * dsh-session-capabilities — browser face.
+ * dsh-plugin-session-capabilities — browser face.
  *
  * - Occupies the Session header's top-right corner with a toggle (shown for
  *   blank Sessions too) that docks the session details card as a panel on the

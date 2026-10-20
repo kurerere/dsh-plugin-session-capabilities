@@ -1,7 +1,7 @@
 # Dev overlay for a deepseek-harness checkout:
-#   pnpm dsh --profile web --patch /ABS/PATH/dsh-session-capabilities/dev/cordis.dev.yml
+#   pnpm dsh --profile web --patch /ABS/PATH/dsh-plugin-session-capabilities/dev/cordis.dev.yml
 # Copy this file to cordis.dev.yml and replace /ABS/PATH with the absolute
 # checkout path (patch module paths must be absolute). Run from the checkout root.
 - insert:
     - id: session-capabilities
-      name: '/ABS/PATH/dsh-session-capabilities/lib/index.js'
+      name: '/ABS/PATH/dsh-plugin-session-capabilities/lib/index.js'

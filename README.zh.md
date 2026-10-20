@@ -1,4 +1,4 @@
-# dsh-session-capabilities
+# dsh-plugin-session-capabilities
 
 [English](./README.md)
 
@@ -25,19 +25,19 @@
 
 ```sh
 # 本地目录
-dsh plugin --profile web add link:/绝对路径/dsh-session-capabilities
+dsh plugin --profile web add link:/绝对路径/dsh-plugin-session-capabilities
 
 # GitHub（发布后）
-dsh plugin --profile web add github:<owner>/dsh-session-capabilities
+dsh plugin --profile web add github:kurerere/dsh-plugin-session-capabilities
 ```
 
 之后照常运行 `dsh --profile web`。确认插件层已加载：
 
 ```sh
-dsh --profile web --dump-config | grep -A2 'dsh-session-capabilities'
+dsh --profile web --dump-config | grep -A2 'dsh-plugin-session-capabilities'
 ```
 
-卸载：`dsh plugin --profile web remove dsh-session-capabilities`。
+卸载：`dsh plugin --profile web remove dsh-plugin-session-capabilities`。
 
 ## 开发
 
@@ -53,7 +53,7 @@ pnpm run types        # 生成 lib/types
 
 ```sh
 cd /path/to/deepseek-harness
-pnpm dsh --profile web --patch /abs/path/dsh-session-capabilities/dev/cordis.dev.yml --no-open
+pnpm dsh --profile web --patch /abs/path/dsh-plugin-session-capabilities/dev/cordis.dev.yml --no-open
 ```
 
 请使用显式的 `--profile web --patch …` 写法；`pnpm dsh web --patch …` 简写在部分环境下会失败，未作为测试形式。

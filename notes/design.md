@@ -1,4 +1,4 @@
-# dsh-session-capabilities — design notes
+# dsh-plugin-session-capabilities — design notes
 
 Tested against DeepSeek Harness **0.2.1-rc.2** (checkout `687f282`, web profile).
 Goal: a docked "session details" card, opened from the Session header's top-right,

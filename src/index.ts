@@ -1,5 +1,5 @@
 /**
- * dsh-session-capabilities — Host face.
+ * dsh-plugin-session-capabilities — Host face.
  *
  * Serves a read-only, per-Session projection of the skills and MCP servers the
  * Session sees, over two exact Connection Fetch routes inside the Connection's
