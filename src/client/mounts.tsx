@@ -1,60 +1,137 @@
 /**
- * The two mounts that place {@link SessionDetailsCard}:
+ * The mount that places {@link SessionDetailsCard}: {@link CornerControls},
+ * the occupant of the Session header's far-right corner.
  *
- * - {@link DetailsTab}: the body of a right-sidebar page tab. The right
- *   sidebar's push presentation docks it inside the session pane and the
- *   conversation column reflows to the remaining width.
- * - {@link HeaderToggle}: an icon button in the Session header's utilities
- *   (top right) that shows or hides that tab.
+ * The corner is the one header seat rendered for a blank Session too (the
+ * utilities row is hidden until the conversation starts), so the toggle is
+ * reachable from the first screen. The seat is single and the right sidebar
+ * already fills it with its expand button; this entry shadows it at a lower
+ * priority and renders an equivalent expand button beside its own toggle.
  *
- * Only this file knows about slots; the card stays mount-agnostic.
+ * The card opens as a panel docked to the right of the Conversation under the
+ * header. The Conversation body yields the panel's width (it is pushed, not
+ * covered); the header keeps its full width so the toggle stays put.
+ *
+ * Only this file knows about slots and the host DOM; the card stays
+ * mount-agnostic.
  */
 
-import { useEffect, useRef } from 'react'
-import { Button, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react'
+import { createPortal } from 'react-dom'
+import { Button, IconPanelLeftOutlineRegular, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
-import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import { SessionDetailsCard } from './SessionDetailsCard.tsx'
 import type { CapabilitiesState } from './model.ts'
 import type { NS } from './locales.ts'
 
-/** Registration-side business face shared by both mounts. */
-export interface CapabilitiesInjected {
+/** Attribute marking the Conversation root while the panel is docked in it. */
+const HOST_ATTR = 'data-dshsc-panel'
+
+/** The right sidebar's expand control, re-rendered here because this entry shadows its seat. */
+export interface SidebarExpand {
+  /** Whether a right sidebar is loaded now (it may come and go after this seat renders). */
+  present: () => boolean
+  /** Whether the right sidebar currently shows its panel. */
+  isExpanded: () => boolean
+  /** Show the right sidebar. */
+  expand: () => void
+  /** Tooltip copy, from the sidebar's own dictionary. */
+  label: () => string
+  /** Accessible name, from the sidebar's own dictionary. */
+  ariaLabel: () => string
+}
+
+/** Registration-side business face of the corner. */
+export interface CornerInjected {
   hooks: {
     /** Bound by the renderer as `useCapabilities(selector)`. */
     capabilities: {
       getSnapshot(): CapabilitiesState
       subscribe(listener: () => void): () => void
     }
+    /** Bound as `usePanelOpen(selector)`: whether the panel is shown. */
+    panelOpen: {
+      getSnapshot(): boolean
+      subscribe(listener: () => void): () => void
+    }
   }
+  /** Show or hide the panel (remembered per browser profile). */
+  togglePanel: () => void
   /** Keep a Session current while a view shows it; returns the release. */
   watch: (sessionId: string) => () => void
   refresh: (sessionId: string) => void
   reconnect: (sessionId: string, serverName: string) => Promise<boolean>
   /** Present when the shell has a plugin settings page to open. */
   openSettings: (() => void) | undefined
+  /** The right sidebar's expand button this seat replaces. */
+  sidebar: SidebarExpand
 }
 
-export interface HeaderToggleInjected {
-  /** Show the details tab, or hide the column when it already shows it. */
-  toggle: () => void
-  /** Re-open the details tab for a Session the user last left it open in. */
-  restore: (sessionId: string) => void
-}
-
-export type DetailsTabProps =
-  PropsRuntime<'sidebar.right.pane.tab'>
+export type CornerControlsProps =
+  PropsRuntime<'conversation.session.header.corner'>
   & PropsLocale<typeof NS>
-  & InjectFace<CapabilitiesInjected>
+  & InjectFace<CornerInjected>
 
 /**
- * Right-sidebar tab body: a padded column holding the card.
- * @param props - session-scoped tab props plus the injected model face.
- * @returns the docked card.
+ * Header corner: the panel toggle, the right sidebar's expand button while it
+ * is collapsed, and the docked panel itself (portaled into the Conversation root).
+ * @param props - session-scoped corner props plus the injected face.
+ * @returns the corner buttons.
  */
-export function DetailsTab({ sessionId, useSession, useCapabilities, watch, refresh, reconnect, openSettings, t }: DetailsTabProps) {
+export function CornerControls(props: CornerControlsProps) {
+  const { usePanelOpen, togglePanel, sidebar, t } = props
+  const open = usePanelOpen(value => value)
+  const anchor = useRef<HTMLSpanElement>(null)
+  const [host, setHost] = useState<HTMLElement | null>(null)
+  const sidebarExpanded = useSidebarExpanded(sidebar, anchor)
+
+  // The Conversation root (marked by data-phase) holds the header's slot
+  // anchor and the content body; it is position: relative, so the panel can
+  // dock against its right edge. The header's direct parent is a
+  // display:contents slot anchor, not the root.
+  useLayoutEffect(() => {
+    const root = anchor.current?.closest('header')?.closest('[data-phase]')
+    setHost(root instanceof HTMLElement ? root : null)
+  }, [])
+
+  return (
+    <span ref={anchor} className="dshsc-corner">
+      <Tooltip label={t('header.toggleHint')} side="bottom" delayMs={500}>
+        <Button
+          size="sm"
+          className="dshsc-headerButton"
+          data-active={open ? '' : undefined}
+          aria-label={t('header.toggle')}
+          aria-pressed={open}
+          onClick={togglePanel}
+        >
+          <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
+            <rect x="2" y="2.5" width="12" height="11" rx="2" />
+            <path d="M10 2.5v11M11.6 5.5h.8M11.6 8h.8M11.6 10.5h.8" strokeLinecap="round" />
+          </svg>
+        </Button>
+      </Tooltip>
+      {sidebar.present() && !sidebarExpanded && (
+        <Tooltip label={sidebar.label()} side="bottom" delayMs={500}>
+          <Button size="sm" className="dshsc-headerButton" aria-label={sidebar.ariaLabel()} data-sidebar-right-expand onClick={sidebar.expand}>
+            <IconPanelLeftOutlineRegular className="dshsc-headerIcon" />
+          </Button>
+        </Tooltip>
+      )}
+      {open && host !== null && createPortal(<DetailsPanel {...props} host={host} />, host)}
+    </span>
+  )
+}
+
+/**
+ * The docked panel: claims room in the Conversation root while mounted and
+ * keeps the Session's snapshot current.
+ * @param props - corner props plus the Conversation root it docks in.
+ * @returns the panel holding the card.
+ */
+function DetailsPanel({ host, sessionId, useSession, useCapabilities, watch, refresh, reconnect, openSettings, t }: CornerControlsProps & { host: HTMLElement }) {
   const entry = useCapabilities(state => state[sessionId])
   const running = useSession(snapshot => snapshot.running)
   const wasRunning = useRef(running)
@@ -68,8 +145,26 @@ export function DetailsTab({ sessionId, useSession, useCapabilities, watch, refr
     wasRunning.current = running
   }, [running, refresh, sessionId])
 
+  // The marker makes the root's body yield the panel's width (styles.css);
+  // the panel starts below the header, whose height varies with its content.
+  useLayoutEffect(() => {
+    const header = host.querySelector('header')
+    const place = () => {
+      host.style.setProperty('--dshsc-panel-top', `${header instanceof HTMLElement ? header.offsetHeight : 0}px`)
+    }
+    place()
+    host.setAttribute(HOST_ATTR, '')
+    const observer = header === null ? undefined : new ResizeObserver(place)
+    if (header !== null) observer?.observe(header)
+    return () => {
+      observer?.disconnect()
+      host.removeAttribute(HOST_ATTR)
+      host.style.removeProperty('--dshsc-panel-top')
+    }
+  }, [host])
+
   return (
-    <div className="dshsc-dock">
+    <aside className="dshsc-panel" aria-label={t('card.aria')}>
       <SessionDetailsCard
         entry={entry}
         t={t}
@@ -77,30 +172,36 @@ export function DetailsTab({ sessionId, useSession, useCapabilities, watch, refr
         onReconnect={serverName => reconnect(sessionId, serverName)}
         onOpenSettings={openSettings}
       />
-    </div>
+    </aside>
   )
 }
 
-export type HeaderToggleProps =
-  PropsRuntime<'conversation.session.header.utilities'>
-  & PropsLocale<typeof NS>
-  & InjectFace<HeaderToggleInjected>
-
 /**
- * Header utilities button toggling the docked card.
- * @param props - session-scoped header props plus the toggle face.
- * @returns the icon button.
+ * Follow the right sidebar's expanded state. The sidebar publishes no
+ * subscription for it, so re-read it whenever its track resizes the header,
+ * and after any click or key press (its own controls and shortcut).
+ * @param sidebar - the expand face.
+ * @param anchor - an element inside the header.
+ * @returns whether the sidebar is expanded.
  */
-export function HeaderToggle({ sessionId, toggle, restore, t }: HeaderToggleProps) {
-  useEffect(() => { restore(sessionId) }, [restore, sessionId])
-  return (
-    <Tooltip label={t('header.toggleHint')} side="bottom" delayMs={500}>
-      <Button size="sm" className="dshsc-headerButton" aria-label={t('header.toggle')} onClick={toggle}>
-        <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
-          <rect x="2" y="2.5" width="12" height="11" rx="2" />
-          <path d="M10 2.5v11M11.6 5.5h.8M11.6 8h.8M11.6 10.5h.8" strokeLinecap="round" />
-        </svg>
-      </Button>
-    </Tooltip>
-  )
+function useSidebarExpanded(sidebar: SidebarExpand, anchor: RefObject<HTMLElement>): boolean {
+  const subscribe = useCallback((listener: () => void) => {
+    let frame = 0
+    const later = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(listener)
+    }
+    const header = anchor.current?.closest('header')
+    const observer = header == null ? undefined : new ResizeObserver(later)
+    if (header != null) observer?.observe(header)
+    document.addEventListener('pointerup', later, true)
+    document.addEventListener('keyup', later, true)
+    return () => {
+      cancelAnimationFrame(frame)
+      observer?.disconnect()
+      document.removeEventListener('pointerup', later, true)
+      document.removeEventListener('keyup', later, true)
+    }
+  }, [anchor])
+  return useSyncExternalStore(subscribe, sidebar.isExpanded)
 }

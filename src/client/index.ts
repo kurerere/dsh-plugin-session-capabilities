@@ -1,11 +1,10 @@
 /**
  * dsh-session-capabilities — browser face.
  *
- * - Registers a right-sidebar page tab type (`session-capabilities`) whose
- *   body is the session details card. The right sidebar's push presentation
- *   docks it inside the session pane, and the conversation reflows.
- * - Adds an icon button to the Session header utilities (top right) that
- *   shows / hides that tab, and remembers the choice per browser profile.
+ * - Occupies the Session header's top-right corner with a toggle (shown for
+ *   blank Sessions too) that docks the session details card as a panel on the
+ *   right of the Conversation, which yields the panel's width. The choice is
+ *   remembered per browser profile.
  * - Owns the React-free model that keeps per-Session snapshots current.
  */
 
@@ -17,7 +16,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-connection/client'
-import { DetailsTab, HeaderToggle, type CapabilitiesInjected, type HeaderToggleInjected } from './mounts.tsx'
+import { CornerControls, type CornerInjected, type SidebarExpand } from './mounts.tsx'
 import { CapabilitiesModel } from './model.ts'
 import { en, NS, zh, type CapabilitiesKey } from './locales.ts'
 import STYLES from './styles.css'
@@ -29,10 +28,8 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
   }
 }
 
-/** Implementation identity in the right-sidebar tab system (also the body's slot key). */
-const TAB_ID = 'dsh-session-capabilities/details'
-/** Page kind `openTab` names. */
-const TAB_KIND = 'session-capabilities'
+/** Below the right sidebar's expand button (default 0), so this entry renders in its place. */
+const CORNER_PRIORITY = -1
 /** Package id stamped on the injected style tag. */
 const STYLE_ID = 'dsh-session-capabilities'
 /** Per-profile "keep the card open" preference. */
@@ -53,6 +50,25 @@ function writeOpenPref(open: boolean): void {
     globalThis.localStorage?.setItem(OPEN_PREF_KEY, open ? '1' : '0')
   } catch {
     // Storage may be unavailable (private mode); the toggle still works for this page.
+  }
+}
+
+/** Shared open/closed state of the panel, seeded from the stored preference. */
+class PanelState {
+  private open = readOpenPref()
+  private readonly listeners = new Set<() => void>()
+
+  getSnapshot = (): boolean => this.open
+
+  subscribe = (listener: () => void): (() => void) => {
+    this.listeners.add(listener)
+    return () => { this.listeners.delete(listener) }
+  }
+
+  toggle(): void {
+    this.open = !this.open
+    writeOpenPref(this.open)
+    for (const listener of this.listeners) listener()
   }
 }
 
@@ -80,8 +96,6 @@ export function apply(ctx: ClientContext): void {
   // A replaced Connection generation may reach a different Host: start over.
   ctx.on('connection/reset', () => { model.reset() })
 
-  const t = ctx.locale.bind(NS)
-
   const openSettings = (): void => {
     try {
       ctx.get('layout')?.selectPanel(PLUGINS_PANEL as never)
@@ -90,71 +104,48 @@ export function apply(ctx: ClientContext): void {
     }
   }
 
-  // The dock surface is optional: in a composition without the right sidebar
-  // this plugin contributes nothing visible rather than failing to mount.
-  ctx.inject(['sidebarRight', 'sidebarRightTabs'], (dock: ClientContext) => {
-    dock.effect(() => dock.sidebarRightTabs.register({
-      id: TAB_ID,
-      kind: TAB_KIND,
-      title: () => t('tab.title'),
-      guide: [{ id: 'details', order: 60, title: () => t('tab.title'), description: () => t('tab.guideDescription') }],
-    }), 'session-capabilities: tab type')
-
-    dock.effect(() => dock.slots.inject('sidebar.right.pane.tab', () => dock.slots.register({
-      name: 'sidebar.right.pane.tab',
-      key: TAB_ID,
-      locale: NS,
-      inject: (): CapabilitiesInjected => ({
-        hooks: { capabilities: model.state },
-        watch: sessionId => model.watch(sessionId),
-        refresh: (sessionId) => { model.refresh(sessionId) },
-        reconnect: (sessionId, serverName) => model.reconnect(sessionId, serverName),
-        openSettings: ctx.get('layout') === undefined ? undefined : openSettings,
-      }),
-    }, DetailsTab)), 'session-capabilities: tab body')
-
-    const showing = (): boolean => {
+  // The expand button this entry replaces uses the sidebar's own copy.
+  const sidebarT = ctx.locale.bind('sidebarRight')
+  const sidebarExpand: SidebarExpand = {
+    present: () => ctx.get('sidebarRight') !== undefined,
+    isExpanded: () => {
       try {
-        return dock.sidebarRight.isExpanded() && dock.sidebarRight.active()?.kind === TAB_KIND
+        return ctx.get('sidebarRight')?.isExpanded() ?? false
       } catch {
+        // No Session surface mounted yet: nothing is expanded.
         return false
       }
-    }
-    const restored = new Set<string>()
+    },
+    expand: () => {
+      try {
+        const sidebar = ctx.get('sidebarRight')
+        if (sidebar !== undefined && !sidebar.isExpanded()) sidebar.toggleExpanded()
+      } catch (error) {
+        console.error('session-capabilities: expanding the right sidebar failed:', error)
+      }
+    },
+    label: () => sidebarT('chrome.expand'),
+    ariaLabel: () => sidebarT('chrome.expandAria'),
+  }
 
-    dock.slots.inject('conversation.session.header.utilities', () => dock.slots.register({
-      name: 'conversation.session.header.utilities',
-      id: 'session-capabilities',
-      // Before the shipped Session-log menu, after open-in-app.
-      order: 50,
-      locale: NS,
-      inject: (): HeaderToggleInjected => ({
-        toggle: () => {
-          if (showing()) {
-            dock.sidebarRight.toggleExpanded()
-            writeOpenPref(false)
-          } else {
-            dock.sidebarRight.openTab(TAB_KIND)
-            writeOpenPref(true)
-          }
-        },
-        restore: (sessionId) => {
-          if (restored.has(sessionId) || !readOpenPref()) return
-          // The column's store for the arriving Session is minted in the same
-          // commit; defer one task so commands target it.
-          setTimeout(() => {
-            if (restored.has(sessionId)) return
-            try {
-              if (dock.sidebarRight.mounted.getSnapshot() !== sessionId) return
-              restored.add(sessionId)
-              // Respect whatever the user has open in an expanded column.
-              if (!dock.sidebarRight.isExpanded()) dock.sidebarRight.openTab(TAB_KIND)
-            } catch {
-              // Column not ready for this Session; the next mount retries.
-            }
-          }, 0)
-        },
-      }),
-    }, HeaderToggle))
-  })
+  const panel = new PanelState()
+
+  // The corner is declared by the Conversation header and occupied by the
+  // right sidebar's expand button at the default priority: shadow it (lowest
+  // priority renders) and carry an equivalent expand button when the sidebar
+  // is part of the composition.
+  ctx.slots.inject('conversation.session.header.corner', () => ctx.slots.register({
+    name: 'conversation.session.header.corner',
+    priority: CORNER_PRIORITY,
+    locale: NS,
+    inject: (): CornerInjected => ({
+      hooks: { capabilities: model.state, panelOpen: panel },
+      togglePanel: () => { panel.toggle() },
+      watch: sessionId => model.watch(sessionId),
+      refresh: (sessionId) => { model.refresh(sessionId) },
+      reconnect: (sessionId, serverName) => model.reconnect(sessionId, serverName),
+      openSettings: ctx.get('layout') === undefined ? undefined : openSettings,
+      sidebar: sidebarExpand,
+    }),
+  }, CornerControls))
 }

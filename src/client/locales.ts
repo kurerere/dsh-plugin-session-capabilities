@@ -5,9 +5,7 @@ export const NS = 'session-capabilities'
 
 export const zh = {
   'header.toggle': '会话能力',
-  'header.toggleHint': '显示本会话加载的技能与 MCP 服务器',
-  'tab.title': '会话能力',
-  'tab.guideDescription': '本会话加载的技能与 MCP 服务器',
+  'header.toggleHint': '显示 / 隐藏本会话加载的技能与 MCP 服务器',
   'card.aria': '会话能力',
   'card.loading': '加载中…',
   'card.loadFailed': '加载失败：{error}',
@@ -68,9 +66,7 @@ export type CapabilitiesKey = keyof typeof zh
 
 export const en: Record<CapabilitiesKey, string> = {
   'header.toggle': 'Session capabilities',
-  'header.toggleHint': 'Show the skills and MCP servers loaded for this session',
-  'tab.title': 'Capabilities',
-  'tab.guideDescription': 'Skills and MCP servers loaded for this session',
+  'header.toggleHint': 'Show or hide the skills and MCP servers loaded for this session',
   'card.aria': 'Session capabilities',
   'card.loading': 'Loading…',
   'card.loadFailed': 'Failed to load: {error}',

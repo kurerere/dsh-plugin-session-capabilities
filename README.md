@@ -4,8 +4,9 @@
 
 A [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (dsh) plugin for the Web/Desktop
 client: a docked **session details card** that shows the skills and MCP servers loaded for
-the current Session. Open it from the icon at the top right of the Session header; it docks
-in the right sidebar and the conversation column reflows beside it.
+the current Session. Open it from the icon at the top right of the Session header (also on a
+new, blank Session); it docks as a panel on the right of the conversation, below the header,
+and the conversation reflows beside it. It does not use the right sidebar.
 
 ![Light](docs/screenshots/light.png)
 ![Dark](docs/screenshots/dark.png)
@@ -86,8 +87,10 @@ PLAYWRIGHT=/path/to/node_modules/playwright DSH_URL='http://127.0.0.1:3080/?toke
 
 ## Known limitations
 
-- The column width is the right sidebar's shared setting (default ≈45 % of the window).
-  dsh exposes no API for a plugin to set it; drag the edge once and it sticks.
+- The panel width is fixed (360 px, at most 45 % of the conversation) and not resizable.
+- The header's top-right corner holds a single control, normally the right sidebar's expand
+  button. The plugin takes that seat and renders its own toggle plus an equivalent expand
+  button, which loses the sidebar's shortcut hint in its tooltip.
 - dsh has no MCP status service: status is assembled from mcp-client instances, their
   config, the Session's tool list, and mcp-client log lines. If mcp-client rewords its
   logs, failure details degrade to fiber state only.

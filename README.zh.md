@@ -3,8 +3,8 @@
 [English](./README.md)
 
 适用于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（dsh）Web / 桌面端的插件：
-一张停靠式的**会话能力卡片**，展示当前会话加载的技能与 MCP 服务器。点击会话标题栏右上角的图标即可打开，
-卡片停靠在右侧边栏，对话栏随之收窄重排。
+一张停靠式的**会话能力卡片**，展示当前会话加载的技能与 MCP 服务器。点击会话标题栏右上角的图标即可打开（新建的空白会话也有），
+卡片以面板形式停靠在对话区右侧、标题栏下方，对话内容随之收窄重排，不占用右侧边栏。
 
 ![浅色](docs/screenshots/light.png)
 ![深色](docs/screenshots/dark.png)
@@ -70,7 +70,8 @@ pnpm dsh --profile web --patch /abs/path/dsh-session-capabilities/dev/cordis.dev
 
 ## 已知限制
 
-- 栏宽沿用右侧边栏的全局设置（默认约为窗口的 45%），dsh 未向插件开放设置宽度的接口；拖动一次边缘即可记住。
+- 面板宽度固定（360 px，最多占对话区 45%），不可拖动调整。
+- 标题栏右上角只容纳一个控件，原本是右侧边栏的展开按钮。插件接管了该位置，渲染自己的开关和一个等效的展开按钮；该按钮的提示里不再显示快捷键。
 - dsh 没有 MCP 状态服务：状态由 mcp-client 实例、其配置、会话工具列表和 mcp-client 日志拼合而成；
   若 mcp-client 日志措辞变化，失败详情会退化为仅依据实例状态。
 - “重新连接”通过重新加载 mcp-client 插件实例实现（mcp-client 没有重连接口）。

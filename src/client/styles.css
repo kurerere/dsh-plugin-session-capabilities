@@ -6,7 +6,13 @@
  * and removes it on unload.
  */
 
-/* ---- header toggle ---- */
+/* ---- header corner: panel toggle + the right sidebar's expand button ---- */
+.dshsc-corner {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .dshsc-headerButton {
   flex: none;
   width: 28px;
@@ -14,13 +20,51 @@
   color: var(--dsw-alias-label-secondary);
 }
 
-/* ---- dock: the right-sidebar tab body ---- */
-.dshsc-dock {
+.dshsc-headerButton[data-active] {
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-fill-l2, rgb(0 0 0 / 6%));
+}
+
+/* The left sidebar's collapse glyph mirrored, as the right sidebar draws it. */
+.dshsc-headerIcon {
+  width: 16px;
+  height: 16px;
+  transform: scaleX(-1);
+}
+
+/* ---- panel: docked on the right of the Conversation, below its header ---- */
+[data-dshsc-panel] {
+  --dshsc-panel-width: min(360px, 45%);
+}
+
+/* The Conversation body yields the panel's width; the header keeps its own. */
+[data-dshsc-panel] > [data-conversation-content] {
+  margin-right: var(--dshsc-panel-width);
+}
+
+.dshsc-panel {
+  position: absolute;
+  z-index: 8;
+  top: var(--dshsc-panel-top, 0px);
+  right: 0;
+  bottom: 0;
   box-sizing: border-box;
-  height: 100%;
+  width: var(--dshsc-panel-width);
   overflow: auto;
   padding: 12px 12px 16px;
+  border-left: 0.5px solid var(--dsw-alias-border-l3);
+  background: var(--dsw-alias-bg-base);
   --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l1);
+  animation: dshsc-panel-in 160ms ease-out;
+}
+
+@keyframes dshsc-panel-in {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dshsc-panel { animation: none; }
 }
 
 /* ---- card ---- */

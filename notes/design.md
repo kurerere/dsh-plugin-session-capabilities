@@ -7,30 +7,36 @@ patching the harness.
 
 ## 1. Where the card mounts
 
-**Decision: a right-sidebar page tab** (`sidebarRightTabs.register({ kind: 'session-capabilities' })`
-plus a `sidebar.right.pane.tab` slot body), toggled by an icon button in
-`conversation.session.header.utilities`.
+**Decision: a push panel docked in the Conversation root, toggled from the header corner**
+(`conversation.session.header.corner`, registered at priority -1).
 
 Why:
-- The right sidebar's *push* presentation already docks inside the session pane and
-  reflows the conversation column (no overlay, no custom layout code). This is the
-  behaviour the mockup asks for.
-- Tabs are per-Session, get the Session's `useSession` hook, and are listed in the
-  sidebar's "+" guide, so the card is reachable even without the header button.
-- The header toggle opens the tab, or collapses the column when our tab is already the
-  active one. The open/closed choice is remembered per browser profile
-  (`localStorage['dsh-session-capabilities.open.v1']`) and restored once per Session.
-- Both mounts sit inside `ctx.inject(['sidebarRight', 'sidebarRightTabs'], …)`, so a
-  composition without the right sidebar simply shows nothing instead of failing.
+- The user does not want the card as a right-sidebar tab (tab strip, split/fullscreen
+  chrome). It is its own panel: right of the Conversation, below the header.
+- The corner is the only header seat rendered for a blank Session (`hideChrome` hides the
+  utilities row until the conversation starts), so the toggle is reachable from the first
+  screen. The seat is `single` and occupied by ui-sidebar-right's expand button at
+  priority 0; the slot runtime renders the lowest priority, so this entry shadows it and
+  re-renders an equivalent expand button (`sidebarRight.toggleExpanded()`) while the
+  sidebar is collapsed. The sidebar publishes no subscription for its expanded state, so
+  the button re-reads `isExpanded()` on header resize (the track opening/closing) and after
+  any pointer/key event.
+- The only layout seat that legitimately reserves width is `rightbar`, owned by
+  ui-sidebar-right. The panel therefore is portaled into the Conversation root
+  (`[data-phase]`, `position: relative`; the header's direct parent is a `display:contents`
+  slot anchor), which gets a `data-dshsc-panel` marker; the plugin stylesheet gives the
+  content body (`[data-conversation-content]`) a `margin-right` equal to the panel width, so the transcript / hero recenters in the remaining width (pushed, not
+  covered) and the header — with the toggle — stays put. The panel's `top` follows the
+  header height through a ResizeObserver.
+- Open/closed is one per-profile preference (`localStorage['dsh-session-capabilities.open.v1']`),
+  applied to whichever Session is on screen.
 
 Alternatives considered:
-- **Floating popover from the header button** — simplest, but it covers the transcript
-  and does not reflow; rejected against the mockup.
-- **A new layout column / `rightbar` occupant** — the `rightbar` seat is owned by
-  `ui-sidebar-right`; replacing it would remove every other right-sidebar tab.
-- **Inline block in the conversation (`conversation.session.*` slots)** — scrolls away
-  with the transcript; not a "panel".
-- **Main panel (`layout.selectPanel`)** — replaces the conversation entirely.
+- **Right-sidebar page tab** (the previous design) — rejected by the user: it shows as a
+  sidebar tab with the sidebar's chrome.
+- **Floating popover from the header button** — covers the transcript and does not reflow.
+- **Replacing the `rightbar` seat** — would remove every other right-sidebar tab.
+- **Header utilities button** — hidden on blank Sessions.
 
 ## 2. Host ↔ browser transport
 
@@ -104,9 +110,12 @@ hidden when the composition has no `layout` service.
 
 ## 6. Known gaps
 
-- **Column width** is the right sidebar's shared preference (default 45 % of the frame,
-  min 300 px). `ctx.layout` exposes no width setter, so the plugin does not narrow it to
-  the mockup's ~25 %; users drag the edge once and the width sticks for all tabs.
+- **Panel width** is fixed (`min(360px, 45%)` of the Conversation root); no resize handle.
+- The push relies on the Conversation root carrying `data-phase`, holding
+  `[data-conversation-content]` as a direct child, and being
+  `position: relative` (ui-conversation `ConversationMainPanel`); a reshaped skeleton
+  would need the selector in `mounts.tsx` / `styles.css` updated.
+- The replacement expand button has no shortcut hint (the shortcut catalog is not read).
 - **Star icon** on skill rows is decorative; there is no favourites store.
 - No `sse` transport detection (current mcp-client ships stdio and streamable-http only).
 - Status relies on mcp-client's log wording; a reworded log line degrades to
