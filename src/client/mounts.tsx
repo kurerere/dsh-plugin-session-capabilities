@@ -18,7 +18,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
-import { Button, IconPanelLeftOutlineRegular, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconCordisPluginOutlineRegular, IconPanelLeftOutlineRegular, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
@@ -107,10 +107,7 @@ export function CornerControls(props: CornerControlsProps) {
           aria-pressed={open}
           onClick={togglePanel}
         >
-          <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
-            <rect x="2" y="2.5" width="12" height="11" rx="2" />
-            <path d="M10 2.5v11M11.6 5.5h.8M11.6 8h.8M11.6 10.5h.8" strokeLinecap="round" />
-          </svg>
+          <IconCordisPluginOutlineRegular size={16} />
         </Button>
       </Tooltip>
       {sidebar.present() && !sidebarExpanded && (
