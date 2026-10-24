@@ -15,7 +15,8 @@ and the conversation reflows beside it. It does not use the right sidebar.
 
 - **Summary** — number of skills, connected / active MCP servers, and MCP tools available.
 - **MCP servers** — status dot (connected / connecting / failed / disabled), transport and
-  tool count, expandable tool chips, the failure cause for a broken server, and a
+  tool count, a "Used" badge with this session's call count in the tooltip and expanded details (including failed calls),
+  expandable tool chips, the failure cause for a broken server, and a
   **Reconnect** button that reloads that mcp-client instance. Refresh and settings
   (opens the Plugins page) buttons sit on the section header.
 - **Skills** — searchable list with scope chips (workspace / user / plugin / built-in),

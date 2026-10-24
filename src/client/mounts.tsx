@@ -135,7 +135,7 @@ function DetailsPanel({ host, sessionId, useSession, useCapabilities, watch, ref
 
   useEffect(() => watch(sessionId), [sessionId, watch])
 
-  // Skill usage comes from the Session log, which grows per turn rather than
+  // Skill and MCP usage comes from the Session log, which grows per turn rather than
   // per catalog change: refetch once each turn settles.
   useEffect(() => {
     if (wasRunning.current && !running) refresh(sessionId)

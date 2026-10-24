@@ -6,7 +6,7 @@
  * render the same component by passing the same props.
  */
 
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import {
   IconChevronRightOutlineRegular, IconRefreshOutlineRegular, IconSearchOutlineRegular, IconSettingsOutlineRegular,
 } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -106,12 +106,15 @@ function McpRow({ server, t, onReconnect }: {
   const [open, setOpen] = useState(server.status === 'failed')
   const [allTools, setAllTools] = useState(false)
   const [reconnect, setReconnect] = useState<'idle' | 'pending' | 'failed'>('idle')
-  const expandable = server.tools.length > 0 || server.error !== undefined
+  const usageId = useId()
+  const used = server.invocations > 0
+  const expandable = server.tools.length > 0 || server.error !== undefined || used
   const tools = allTools ? server.tools : server.tools.slice(0, TOOL_PREVIEW)
   const hidden = server.tools.length - tools.length
   const title = [
     `${server.serverName} — ${t(STATUS_LABEL[server.status])}`,
     server.endpoint,
+    server.invocations > 0 ? t('mcp.usedTimes', { count: server.invocations }) : undefined,
     server.origin === 'preset' ? t('mcp.origin.preset') : server.origin === 'tools-only' ? t('mcp.origin.toolsOnly') : undefined,
   ].filter(Boolean).join('\n')
 
@@ -126,6 +129,7 @@ function McpRow({ server, t, onReconnect }: {
         type="button"
         className="dshsc-row"
         aria-expanded={expandable ? open : undefined}
+        aria-describedby={used ? usageId : undefined}
         aria-label={expandable ? t(open ? 'mcp.collapse' : 'mcp.expand', { name: server.serverName }) : undefined}
         disabled={!expandable}
         title={title}
@@ -136,11 +140,14 @@ function McpRow({ server, t, onReconnect }: {
         </span>
         <span className="dshsc-dot" data-status={server.status} aria-label={t(STATUS_LABEL[server.status])} role="img" />
         <span className="dshsc-label">{server.serverName}</span>
+        {used ? <span className="dshsc-used">{t('mcp.used')}</span> : null}
         <span className="dshsc-value" data-status={server.status}>{statusValue(server, t)}</span>
       </button>
+      {used && !open ? <span id={usageId} className="dshsc-srOnly">{t('mcp.usedTimes', { count: server.invocations })}</span> : null}
       {open && expandable
         ? (
           <div className="dshsc-sub">
+            {used ? <div id={usageId} className="dshsc-usage">{t('mcp.usedTimes', { count: server.invocations })}</div> : null}
             {server.error === undefined ? null : <div className="dshsc-errorBox" title={server.error}>{errorHeadline(server.error)}</div>}
             {server.status === 'failed' && server.reconnectable
               ? (

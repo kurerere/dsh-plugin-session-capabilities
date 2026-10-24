@@ -1,7 +1,7 @@
 {
   "name": "dsh-plugin-session-capabilities",
   "description": "DeepSeek Harness plugin: a docked session-details card (header corner toggle + push panel) showing the skills and MCP servers loaded for the current session",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -58,7 +58,8 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "types": "tsc -p tsconfig.types.json",
-    "check": "pnpm run typecheck && pnpm run build && node scripts/verify-artifacts.mjs",
+    "test": "node --test scripts/*.test.mjs",
+    "check": "pnpm run test && pnpm run typecheck && pnpm run build && node scripts/verify-artifacts.mjs",
     "link:dsh": "node scripts/link-dsh-checkout.mjs"
   },
   "peerDependencies": {

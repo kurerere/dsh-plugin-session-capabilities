@@ -59,6 +59,8 @@ export type McpOrigin =
  | 'tools-only';
 /** One MCP server visible to the Session. */
 export interface CapabilityMcpServer {
+    /** MCP tool calls recorded in this Session, including calls that failed. */
+    readonly invocations: number;
     /** Configured `serverName` (the tool namespace). */
     readonly serverName: string;
     readonly transport: McpTransport;

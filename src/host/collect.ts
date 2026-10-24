@@ -77,6 +77,7 @@ interface SessionView {
   tools: Context['tools'] | undefined
   /** Skill name → invocation count derived from the Session log. */
   invocations: Map<string, number>
+  events: readonly { readonly type: string; readonly data?: unknown }[]
   release: () => Promise<void>
 }
 
@@ -276,6 +277,17 @@ export function countSkillInvocations(events: readonly { readonly type: string; 
   return counts
 }
 
+/** Count recorded MCP tool calls, including failed calls, using the same namespace ownership as the catalog. */
+export function countMcpInvocations(events: readonly { readonly type: string; readonly data?: unknown }[], servers: readonly string[]): Map<string, number> {
+  const calls: string[] = []
+  for (const event of events) {
+    const name = asRecord(event.data)?.name
+    if (event.type === 'tool/call' && typeof name === 'string' && /^mcp__.+__.+$/.test(name)) calls.push(name)
+  }
+  const { byServer } = groupMcpTools(calls, servers)
+  return new Map([...byServer].map(([server, tools]) => [server, tools.length]))
+}
+
 const STATUS_ORDER: Record<McpStatus, number> = { failed: 0, connecting: 1, connected: 2, disabled: 3 }
 
 /**
@@ -288,6 +300,7 @@ export async function resolveView(ctx: Context, sessionId: SessionId, signal: Ab
   let cwd: string | undefined
   let agentPreset: string | undefined
   let invocations = new Map<string, number>()
+  let events: SessionView['events'] = []
   const sessionQuery = ctx.get('sessionQuery')
   if (sessionQuery !== undefined) {
     try {
@@ -299,6 +312,7 @@ export async function resolveView(ctx: Context, sessionId: SessionId, signal: Ab
         const preset = values?.agentPreset
         agentPreset = typeof preset === 'string' ? preset : undefined
         invocations = countSkillInvocations(observation.events)
+        events = observation.events
       } finally {
         observation[Symbol.dispose]()
       }
@@ -334,6 +348,7 @@ export async function resolveView(ctx: Context, sessionId: SessionId, signal: Ab
     skills,
     tools,
     invocations,
+    events,
     release: async () => { await lease?.[Symbol.asyncDispose]() },
   }
 }
@@ -388,6 +403,7 @@ export async function collectSnapshot(
     const instances = listMcpInstances(ctx)
       .filter(instance => instance.scope === undefined || chain.has(instance.scope))
     const { byServer, orphans } = groupMcpTools(toolNames, instances.map(instance => instance.serverName))
+    const mcpInvocations = countMcpInvocations(view.events, [...byServer.keys(), ...orphans.keys()])
     const servers: CapabilityMcpServer[] = []
     const seen = new Set<string>()
     // A preset instance shadows a global one with the same namespace; visit nearest first.
@@ -400,6 +416,7 @@ export async function collectSnapshot(
       const origin: McpOrigin = instance.scope === undefined ? 'global' : 'preset'
       servers.push({
         serverName: instance.serverName,
+        invocations: mcpInvocations.get(instance.serverName) ?? 0,
         transport: instance.transport,
         status,
         origin,
@@ -415,6 +432,7 @@ export async function collectSnapshot(
       if (seen.has(serverName)) continue
       servers.push({
         serverName,
+        invocations: mcpInvocations.get(serverName) ?? 0,
         transport: 'unknown',
         status: 'connected',
         origin: 'tools-only',

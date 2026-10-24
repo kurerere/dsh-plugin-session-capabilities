@@ -53,6 +53,10 @@ interface SessionView {
     tools: Context['tools'] | undefined;
     /** Skill name → invocation count derived from the Session log. */
     invocations: Map<string, number>;
+    events: readonly {
+        readonly type: string;
+        readonly data?: unknown;
+    }[];
     release: () => Promise<void>;
 }
 /**
@@ -79,6 +83,11 @@ export declare function countSkillInvocations(events: readonly {
     readonly type: string;
     readonly data?: unknown;
 }[]): Map<string, number>;
+/** Count recorded MCP tool calls, including failed calls, using the same namespace ownership as the catalog. */
+export declare function countMcpInvocations(events: readonly {
+    readonly type: string;
+    readonly data?: unknown;
+}[], servers: readonly string[]): Map<string, number>;
 /**
  * Resolve the Session's cwd, preset, scope, and the registries that serve it.
  * Mirrors `@deepseek-ai/dsh-api-session-controller`'s SessionSkillCatalog so

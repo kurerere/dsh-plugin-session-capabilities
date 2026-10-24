@@ -69,6 +69,7 @@
 
 /* ---- card ---- */
 .dshsc-card {
+  container-type: inline-size;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -292,6 +293,28 @@ button.dshsc-row:focus-visible {
   padding: 2px 14px 8px 35px;
 }
 
+.dshsc-usage {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+}
+
+.dshsc-srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Keep the name and usage together when the dock has little room. */
+@container (max-width: 300px) {
+  button.dshsc-row { flex-wrap: wrap; row-gap: 2px; }
+  .dshsc-value { box-sizing: border-box; flex-basis: 100%; padding-left: 27px; }
+  .dshsc-tile span { white-space: normal; }
+}
+
 .dshsc-chips {
   display: flex;
   flex-wrap: wrap;
@@ -302,6 +325,9 @@ button.dshsc-row:focus-visible {
 }
 
 .dshsc-chip {
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
   display: inline-block;
   padding: 1px 6px;
   border: 0;
@@ -441,6 +467,7 @@ button.dshsc-row:focus-visible {
 }
 
 .dshsc-used {
+  white-space: nowrap;
   display: inline-flex;
   flex: none;
   align-items: center;
